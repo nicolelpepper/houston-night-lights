@@ -1,0 +1,72 @@
+---
+title: "hw3-nicolelpepper"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+#| code-fold: true
+#| code-summary: "Display Code"
+#| 
+library(terra)
+library(geodata)
+library(tidyverse)
+library(tmap)
+library(kableExtra)
+library(spData)
+library(spDataLarge)
+library(here)
+library(viridisLite) 
+library(terra)
+library(sf)
+library(purrr)
+library(stars)
+```
+
+Read in Data:
+```{r}
+#| code-fold: true
+#| code-summary: "Display Code"
+
+# Pull layers in geodatabase layers separately
+geom_layer <- sf::read_sf(here::here("data", "ACS_2019_5YR_TRACT_48_TEXAS.gdb"), layer = 'ACS_2019_5YR_TRACT_48_TEXAS')
+income_layer <- sf::read_sf(here::here("data", "ACS_2019_5YR_TRACT_48_TEXAS.gdb"), layer = 'X19_INCOME')
+
+texas_join <- st_sf(income_layer, geom = st_as_sfc(geom_layer))
+
+# Check out the layers in the gdb
+st_layers('data/ACS_2019_5YR_TRACT_48_TEXAS.gdb')
+
+# Load in the buildings and road layers
+buildings <- sf::read_sf(here::here("data","gis_osm_buildings_a_free_1.gpkg"), query = "SELECT * FROM gis_osm_buildings_a_free_1 WHERE (type IS NULL AND name IS NULL) OR type in ('residential', 'apartments', 'house', 'static_caravan', 'detached')")
+roads <- sf::read_sf(here::here("data","gis_osm_roads_free_1.gpkg"), query = "SELECT * FROM gis_osm_roads_free_1 WHERE fclass='motorway'")
+
+# Load the raster directly using the file path
+before_a <- rast("data/VNP46A1/VNP46A1.A2021038.h08v05.001.2021039064328.tif")
+before_b  <- rast("data/VNP46A1/VNP46A1.A2021038.h08v06.001.2021039064329.tif")
+after_a  <- rast("data/VNP46A1/VNP46A1.A2021047.h08v05.001.2021048091106.tif")
+after_b  <- rast("data/VNP46A1/VNP46A1.A2021047.h08v06.001.2021048091105.tif")
+
+```
+
+Filter and Clean Data
+
+B19001e1|HOUSEHOLD INCOME IN THE PAST 12 MONTHS (IN 2011 INFLATION-ADJUSTED DOLLARS) - Universe:  Households - Total: -- (Estimate)
+
+B19013e1|MEDIAN HOUSEHOLD INCOME IN THE PAST 12 MONTHS (IN 2011 INFLATION-ADJUSTED DOLLARS) - Universe:  Households - Median household income in the past 12 months (in 2010 inflation-adjusted dollars) -- (Estimate)
+
+```{r}
+
+texas_inc <- texas_join %>%
+  select(med_inc = B19001e1)
+
+
+```
+
+```{r}
+tm_shape(texas_inc) +
+  tm_fill(col = 'med_inc', palette = 'Reds')
+```
+
