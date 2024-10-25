@@ -48,7 +48,6 @@ before_a <- rast("data/VNP46A1/VNP46A1.A2021038.h08v05.001.2021039064328.tif")
 before_b  <- rast("data/VNP46A1/VNP46A1.A2021038.h08v06.001.2021039064329.tif")
 after_a  <- rast("data/VNP46A1/VNP46A1.A2021047.h08v05.001.2021048091106.tif")
 after_b  <- rast("data/VNP46A1/VNP46A1.A2021047.h08v06.001.2021048091105.tif")
-
 ```
 
 Filter and Clean Data
@@ -58,15 +57,39 @@ B19001e1|HOUSEHOLD INCOME IN THE PAST 12 MONTHS (IN 2011 INFLATION-ADJUSTED DOLL
 B19013e1|MEDIAN HOUSEHOLD INCOME IN THE PAST 12 MONTHS (IN 2011 INFLATION-ADJUSTED DOLLARS) - Universe:  Households - Median household income in the past 12 months (in 2010 inflation-adjusted dollars) -- (Estimate)
 
 ```{r}
-
 texas_inc <- texas_join %>%
   select(med_inc = B19001e1)
-
 
 ```
 
 ```{r}
 tm_shape(texas_inc) +
   tm_fill(col = 'med_inc', palette = 'Reds')
+```
+
+
+```{r}
+# Merge the two rasters for before and after
+before_lights <- merge(before_a,before_b)
+after_lights <- merge(after_a,after_b)
+
+# Diff in lights
+diff_lights <- after_lights - before_lights
+```
+
+
+```{r}
+plot(diff_lights)
+```
+
+```{r}
+rcl <- matrix(c(-Inf, 200, 1,
+                200, Inf, 2),
+              ncol = 3, byrow = TRUE)
+
+reclassified <- terra::classify(diff_lights, rcl = rcl)
+values(reclassified) <- as.factor(values(reclassified))
+
+plot(reclassified)
 ```
 
