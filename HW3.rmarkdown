@@ -31,7 +31,9 @@ library(magick)
 
 ```
 
+
 Read in Project Data:
+
 ```{r}
 #| code-fold: true
 #| code-summary: "Display Code"
@@ -73,7 +75,9 @@ vector_list <- c("buildings", "roads", "texas_join")
 ```
 
 
+
 Transform CRS:
+
 ```{r}
 
 # Transform CRS to EPSG: 3083
@@ -90,11 +94,13 @@ for (i in vector_list) {
 #     }
 # }}
 ```
+
 Filter and Clean Data
 
 B19001e1\|HOUSEHOLD INCOME IN THE PAST 12 MONTHS (IN 2011 INFLATION-ADJUSTED DOLLARS) - Universe: Households - Total: -- (Estimate)
 
 B19013e1\|MEDIAN HOUSEHOLD INCOME IN THE PAST 12 MONTHS (IN 2011 INFLATION-ADJUSTED DOLLARS) - Universe: Households - Median household income in th
+
 ```{r}
 # Check out col names for income_layer
 colnames(income_layer)
@@ -116,7 +122,6 @@ tm_shape(houston_inc) +
 diff_lights <- before_lights - after_lights
 ```
 
-
 ```{r}
 plot(diff_lights)
 ```
@@ -128,7 +133,9 @@ plot(diff_lights)
 
 ```
 
+
 ### Create blackout mask
+
 ```{r}
 # Reclassify raster values for above and below the 200 threshold
 # WE COULD DO THE CLASS BRACKETING METHOD TO STREAMLINE?
@@ -154,11 +161,10 @@ diff_poly <- as.polygons(reclassified) %>%
   st_as_sf()
 
 ```
- 
+
 ```{r}
 plot(diff_poly)
 ```
-
 
 ```{r}
 st_crs(diff_poly)
@@ -182,7 +188,9 @@ diff_crop <- st_crop(diff_poly, bbox) %>%
 plot(diff_crop)
 ```
 
+
 ### Exclude highways from the cropped blackout mask
+
 
 ```{r}
 # Buffer HWY data
@@ -192,7 +200,6 @@ highways <- st_buffer(roads,
 
 diff_hwy_masked <- st_difference(diff_crop, highways)
 ```
-
 
 ```{r}
 tm_shape(diff_hwy_masked) + 
@@ -207,7 +214,9 @@ tm_shape(diff_hwy_masked) +
 
 ```
 
+
 ### Identify homes likely impacted by blackouts
+
 
 ```{r}
 buildings %>% st_crop(buildings, bbox = diff_crop) 
