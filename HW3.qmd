@@ -10,6 +10,8 @@ editor_options:
 #| code-fold: true
 #| code-summary: "Display Code"
 
+# ---- Load Libraries ----
+
 # Load libraries
 library(terra)
 library(geodata)
@@ -27,8 +29,6 @@ library(stars)
 library(raster)
 library(dplyr)
 library(magick)
-
-
 ```
 
 Read in Project Data:
@@ -36,15 +36,20 @@ Read in Project Data:
 #| code-fold: true
 #| code-summary: "Display Code"
 
-# Read in the light raster datasets 
+# ---- Read in Night Light Data ----
+
+# Read in the night light raster data
 before_a <- rast("data/VNP46A1/VNP46A1.A2021038.h08v05.001.2021039064328.tif") 
 before_b <- rast("data/VNP46A1/VNP46A1.A2021038.h08v06.001.2021039064329.tif")  
 after_a <- rast("data/VNP46A1/VNP46A1.A2021047.h08v05.001.2021048091106.tif")
 after_b <- rast("data/VNP46A1/VNP46A1.A2021047.h08v06.001.2021048091105.tif") 
 
+# Merge the two images per time period (before & after)
 before_lights <- merge(before_a,before_b) 
 after_lights <- merge(after_a,after_b) 
 
+
+# ---- Read in Buildings and Roads Data ----
 
 # Read in buildings layer
 buildings <- sf::read_sf(here::here("data","gis_osm_buildings_a_free_1.gpkg"),
@@ -54,34 +59,40 @@ buildings <- sf::read_sf(here::here("data","gis_osm_buildings_a_free_1.gpkg"),
 # Read in roads layers
 roads <- sf::read_sf(here::here("data","gis_osm_roads_free_1.gpkg"), query = "SELECT * FROM gis_osm_roads_free_1 WHERE fclass='motorway'") 
 
+# ---- Read in Census Data ----
+
 # Read in Census geodatabase layers in separately and join geometry
 geom_layer <- sf::read_sf(here::here("data", "ACS_2019_5YR_TRACT_48_TEXAS.gdb"),
                           layer = 'ACS_2019_5YR_TRACT_48_TEXAS')
 income_layer <- sf::read_sf(here::here("data", "ACS_2019_5YR_TRACT_48_TEXAS.gdb"),
-                            layer = 'X19_INCOME')
+                          layer = 'X19_INCOME')
               # Assign geom_layer as the geometry for the income layer
               geom_layer <- st_as_sfc(geom_layer)
-              texas_join <- st_sf(income_layer, geom = geom_layer)
+              texas_join <- st_sf(income_layer,
+                                  geom = geom_layer)
               # Check out the layers in the gdb, select 
               #st_layers('data/ACS_2019_5YR_TRACT_48_TEXAS.gdb')
-
-# Create a data list
-vector_list <- c("buildings", "roads", "texas_join")
-#raster_list <- list(before_a, before_b, after_a, after_b)
-
 
 ```
 
 
-Transform CRS:
+Inspect & Prepare Data CRS
 ```{r}
+#| code-fold: true
+#| code-summary: "Display Code"
 
+# ---- Change CRS of Vector Data ----   
+              
+# Create a vector data list
+vector_list <- c("buildings", "roads", "texas_join")
+              
 # Transform CRS to EPSG: 3083
 for (i in vector_list) {
-  assign(i, if (st_crs(get(i))$epsg != 3083) st_transform(get(i), crs = 3083)
+  assign(i, if (st_crs(get(i))$epsg != 3083)
+         st_transform(get(i), crs = 3083)
          else get(i))
 }
-
+       
 # # Transform CRS for raster data to EPSG: 3083
 # for (r in seq_along(raster_list)) {
 #   if (inherits(raster_list[[r]], "Raster")) {
@@ -92,44 +103,49 @@ for (i in vector_list) {
 ```
 Filter and Clean Data
 
-B19001e1\|HOUSEHOLD INCOME IN THE PAST 12 MONTHS (IN 2011 INFLATION-ADJUSTED DOLLARS) - Universe: Households - Total: -- (Estimate)
-
-B19013e1\|MEDIAN HOUSEHOLD INCOME IN THE PAST 12 MONTHS (IN 2011 INFLATION-ADJUSTED DOLLARS) - Universe: Households - Median household income in th
+MEDIAN HOUSEHOLD INCOME IN THE PAST 12 MONTHS (IN 2011 INFLATION-ADJUSTED DOLLARS) - Universe: Households - Median household income in th
 ```{r}
+#| code-fold: true
+#| code-summary: "Display Code"
+
+# ---- Filter and Clean ----   
+       
 # Check out col names for income_layer
 colnames(income_layer)
 
 # Subset data by selecting the layer 'B19001e1' layer and renaming to 'med_inc'
 houston_inc <- texas_join %>%
-  dplyr::select(med_inc = B19013e1)
+  dplyr::select(id = GEOID,
+                med_inc = B19013e1)
 
 ```
 
+Preliminary data exploration
 ```{r}
+#| code-fold: true
+#| code-summary: "Display Code"
+
+# ---- Preliminary Data Exploration ----   
+
 # Generate a map of Texas blocks colored by income
 tm_shape(houston_inc) +
   tm_fill(col = 'med_inc', palette = 'Reds')
 ```
 
+Calculate change in lights
 ```{r}
+#| code-fold: true
+#| code-summary: "Display Code"
+
 # Diff in lights
 diff_lights <- before_lights - after_lights
-```
 
-
-```{r}
-plot(diff_lights)
-```
-
-```{r}
 # Reclassify raster values for above and below the 200 threshold
 # WE COULD DO THE CLASS BRACKETING METHOD TO STREAMLINE?
 #diff_rcl <- diff_lights[diff_lights < 200] <- NA
 
-```
+# ---- Create a blackout mask ----   
 
-### Create blackout mask
-```{r}
 # Reclassify raster values for above and below the 200 threshold
 # WE COULD DO THE CLASS BRACKETING METHOD TO STREAMLINE?
 rcl <- matrix(c(-Inf, 200, 1,
@@ -138,83 +154,64 @@ rcl <- matrix(c(-Inf, 200, 1,
 reclassified <- terra::classify(diff_lights, rcl = rcl)
 # Treat as factor - IS THIS NECESSARY?
 values(reclassified) <- as.factor(values(reclassified))
-```
 
-```{r}
 # Reclassify values below 200 to be NA
 reclassified[reclassified == 1] <- NA
 plot(reclassified)
-
-```
-
-```{r}
 
 # Convert SpatRaster to polygons
 diff_poly <- as.polygons(reclassified) %>% 
   st_as_sf()
 
 ```
- 
-```{r}
-plot(diff_poly)
-```
 
-
+Clean Lights
 ```{r}
-st_crs(diff_poly)
-```
+#| code-fold: true
+#| code-summary: "Display Code"
 
-```{r}
-# BBox extent format (xmin,xmax,ymin,ymax)
-# (-96.5, 29), (-96.5, 30.5), (-94.5, 30.5), (-94.5, 29)
+# ---- Define Boundary Extent for Houston ----   
+
+# Define Houston Boundary Extent
 bbox <- st_bbox(c(xmin = -96.5,
                   xmax = -94.5,
                   ymin = 29,
                   ymax = 30.5))
 
+# ---- Exclude highways from blackout image ----
+
+# Crop to Houston
 diff_crop <- st_crop(diff_poly, bbox) %>%
   st_make_valid() %>%
   st_transform(crs = 3083)
 
-```
-
-```{r}
-plot(diff_crop)
-```
-
-### Exclude highways from the cropped blackout mask
-
-```{r}
 # Buffer HWY data
 highways <- st_buffer(roads,
                       dist = 200) %>%
             st_union()
 
+# Remove highways from differenced images
 diff_hwy_masked <- st_difference(diff_crop, highways)
-```
 
-
-```{r}
+# Preliminary Map of Blackout Areas
 tm_shape(diff_hwy_masked) + 
   tm_polygons(col = "orange", border.col = "darkorange") +
   tm_layout(main.title = "Houston Lights Difference (Highways Masked)",
             frame = FALSE)
-```
 
-```{r}
-# crop raster to the extent of the vector object
-#terra_crop <- terra::crop(lights_poly, bbox)
 
 ```
+
 
 ### Identify homes likely impacted by blackouts
-
 ```{r}
-buildings %>% st_crop(buildings, bbox = diff_crop) 
+#| code-fold: true
+#| code-summary: "Display Code"
 
-```
+# ---- Crop Buildings to Houston ----   
+houston_buildings <- buildings %>% st_crop(buildings, bbox = diff_crop) 
 
-```{r}
+# ---- Select buildings that overlap with areas that experienced a blackout  ----   
 building_blackouts <- st_intersection(diff_hwy_masked, buildings) 
 
 
@@ -223,18 +220,73 @@ tm_shape(building_blackouts) +
   tm_layout(main.title = "Building Blackouts",
             frame = FALSE)
 
+
 ```
 
+### Identify census tracts impacted by blackouts
 ```{r}
+#| code-fold: true
+#| code-summary: "Display Code"
+
+# ---- Crop Census Layers to Houston ----   
+houston_census <- houston_inc %>% st_crop(houston_inc, bbox = diff_crop) 
+
+# ---- Select census tracts that contain buildings that experienced a blackout  ----   
 census_blackouts <- st_intersection(houston_inc, building_blackouts)
 
-```
+# ---- Identify census tracts that containing buildings that experienced a blackout  ----   
 
-```{r}
+# Get unique census tract IDs that had blackouts
+blackout_tract_ids <- unique(census_blackouts$id)  # Adjust column name if different
+
+# Add a new column to the original houston_inc indicating blackout status
+houston_inc$blackout_status <- ifelse(houston_inc$id %in% blackout_tract_ids, "Yes Blackout", "No Blackout")
 
 tm_shape(census_blackouts) + 
   tm_polygons(col = "pink", border.col = "red") +
   tm_layout(main.title = "Census Blackouts",
             frame = FALSE)
+```
+
+
+```{r}
+# # Dissolve by blackout_status
+# houston_inc_dissolved <- houston_inc %>%
+#   group_by(blackout_status) %>%
+#   summarise(
+#     total_income = sum(med_inc, na.rm = TRUE),  # Replace 'income_column' with the actual income column name
+#     avg_income = mean(med_inc, na.rm = TRUE)    # Or use any other summary statistic
+#   )
+
+```
+
+
+```{r}
+#| code-fold: true
+#| code-summary: "Display Code"
+
+# ---- Plot Difference ----   
+library(ggplot2)
+
+ggplot(data = houston_inc) +
+  geom_violin(aes(x = med_inc, y = blackout_status, fill = blackout_status)) +
+  labs(
+    x = "Blackout Status",
+    y = "Median Household Income",
+    title = "Income Distribution by Blackout Status"
+  ) +
+  theme_minimal()
+
+```
+
+```{r}
+# palette
+
+# Dark Blues - #002129, #08295E, #011526
+# Dark Grey - #272D2E
+# Yellows - #FFE802, #FFFC71, #F2BA52
+# Pink - #FF2171
+# Purple
+# 
 ```
 
