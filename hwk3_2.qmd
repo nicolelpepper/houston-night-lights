@@ -169,6 +169,9 @@ diff_poly <- as.polygons(reclassified) %>%
 
 # Set of maps comparing night light intensities before and after the first to storms
 ```{r}
+#| code-fold: true
+#| code-summary: "Display Code"
+#| 
 # ---- Crop before and after images to Houston ----   
 
 # Define Houston Boundary Extent
@@ -276,30 +279,13 @@ tm_shape(diff_hwy_masked) +
 
 ```
 
-```{r}
-# tm_shape(houston_census) +
-#   tm_polygons() +
-#   tm_shape(diff_hwy_masked) +
-#   tm_borders() +
-#   tm_layout(
-#     title = "Houston Census and Power Outage Map",
-#     legend.outside = TRUE
-#   )
-```
-
 ### Identify homes likely impacted by blackouts
 ```{r}
 #| code-fold: true
 #| code-summary: "Display Code"
 
-
 # ---- Select buildings that overlap with areas that experienced a blackout  ----   
 building_blackouts <- st_intersection(diff_hwy_masked, houston_buildings) 
-
-# tm_shape(building_blackouts) + 
-#   tm_polygons(col = "lightblue", border.col = "darkblue") +
-#   tm_layout(main.title = "Building Blackouts",
-#             frame = FALSE)
 
 ```
 
@@ -331,34 +317,18 @@ print(paste("The number of homes in Houston that lost power was approximately", 
 census_blackouts <- st_intersection(houston_census, building_blackouts)
 
 # Get unique census tract IDs that had blackouts
-blackout_tract_ids <- unique(census_blackouts$id)  # Adjust column name if different
+blackout_tract_ids <- unique(census_blackouts$id) 
 
-# Add a new column to the original houston_inc indicating blackout status
 houston_census$blackout_status <- ifelse(houston_census$id %in% blackout_tract_ids, "Yes Blackout", "No Blackout")
 
 tm_shape(houston_census) + 
   tm_polygons(col = "pink", border.col = "red") +
   tm_layout(main.title = "Census Blackouts",
             frame = FALSE)
-```
 
-```{r}
-# # Dissolve by blackout_status
-# houston_inc_dissolved <- houston_inc %>%
-#   group_by(blackout_status) %>%
-#   summarise(
-#     total_income = sum(med_inc, na.rm = TRUE),  # Replace 'income_column' with the actual income column name
-#     avg_income = mean(med_inc, na.rm = TRUE)    # Or use any other summary statistic
-#   )
-
-```
-
-```{r}
 tm_shape(houston_census) +
   tm_polygons(col = "med_inc", palette = "Reds", title = "Median Income") 
-```
 
-```{r}
 table(houston_census$blackout_status)
 ```
 
