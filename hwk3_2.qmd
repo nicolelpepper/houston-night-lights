@@ -14,6 +14,8 @@ editor_options:
   chunk_output_type: console
 ---
 
+Note: I still have some polishing to do on this assignment - I'm planning to use a regrade to do so! Just a heads up! Thanks! 
+
 ```{r}
 #| code-fold: true
 #| code-summary: "Display Code"
@@ -377,15 +379,4 @@ ggplot(data = houston_census) +
 
 ```
 
-```{r}
-# palette
-
-# Dark Blues - #002129, #08295E, #011526
-# Dark Grey - #272D2E
-# Yellows - #FFE802, #FFFC71, #F2BA52
-# Pink - #FF2171
-# Purple
-# 
-```
-
-This project investigates the impact of a severe weather event in 2021 which caused widespread power outages throughout the state of Texas, including Houston. I use NASA Visible Infrared Imaging Radiometer Suite (VIIRS) nighttime imagery to detect night lights to compare the intensity of night lights before and after the first major storm. I also overlayed the imagery with census tract data pertaining to the median household income. I found that the median household income for census tracts that experienced a blackout was ____ and the median for tracts that didn't experience an outage was ___. For this project, I did not normalize for area, so it is possible that that could be influencing the median values.
+This project investigates the impact of a severe weather event in 2021 which caused widespread power outages throughout the state of Texas, including Houston. I use NASA Visible Infrared Imaging Radiometer Suite (VIIRS) nighttime imagery to detect night lights to compare the intensity of night lights before and after the first major storm. I also overlayed the imagery with census tract data pertaining to the median household income. I found that the median household income for census tracts that experienced a blackout was slightly higher then the median for tracts that didn't experience an outage. For this project, I did not normalize for area, so it is possible that that could be influencing the median values.
