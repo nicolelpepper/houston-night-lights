@@ -1,7 +1,15 @@
 ---
-title: "hw3-nicolelpepper"
-format: html
-editor: visual
+title: "Homework Assignment #3"
+subtitle: "Houston Power Outage"
+author: "Nicole Pepper"
+date: last-modified
+execute: 
+  eval: true
+  warning: false
+  message: false
+format:
+  html:
+    toc: true 
 editor_options: 
   chunk_output_type: console
 ---
@@ -28,10 +36,13 @@ library(purrr)
 library(stars)
 library(raster)
 library(dplyr)
-library(magick)
+library(gifski)
 ```
 
+
 Read in Project Data:
+
+
 ```{r}
 #| code-fold: true
 #| code-summary: "Display Code"
@@ -47,7 +58,6 @@ after_b <- rast("data/VNP46A1/VNP46A1.A2021047.h08v06.001.2021048091105.tif")
 # Merge the two images per time period (before & after)
 before_lights <- merge(before_a,before_b) 
 after_lights <- merge(after_a,after_b) 
-
 
 # ---- Read in Buildings and Roads Data ----
 
@@ -68,14 +78,19 @@ income_layer <- sf::read_sf(here::here("data", "ACS_2019_5YR_TRACT_48_TEXAS.gdb"
                           layer = 'X19_INCOME')
               # Assign geom_layer as the geometry for the income layer
               geom_layer <- st_as_sfc(geom_layer)
-texas_census <- st_sf(income_layer, geom = geom_layer)
+texas_census <- st_sf(income_layer, geom = geom_layer)  %>%
+  dplyr::select(id = GEOID,
+                med_inc = B19013e1)
+              # MEDIAN HOUSEHOLD INCOME IN THE PAST 12 MONTHS (IN 2011 INFLATION-ADJUSTED DOLLARS)
               # Check out the layers in the gdb, select 
               #st_layers('data/ACS_2019_5YR_TRACT_48_TEXAS.gdb')
 
 ```
 
 
-Inspect & Prepare Data CRS
+Inspect & Prepare Vector Data CRS
+
+
 ```{r}
 #| code-fold: true
 #| code-summary: "Display Code"
@@ -101,35 +116,32 @@ for (i in vector_list) {
 # }}
 ```
 
-Filter and Clean Data
-
-MEDIAN HOUSEHOLD INCOME IN THE PAST 12 MONTHS (IN 2011 INFLATION-ADJUSTED DOLLARS) - Universe: Households - Median household income in th
-```{r}
-#| code-fold: true
-#| code-summary: "Display Code"
-
-# ---- Filter and Clean ----   
-
-# Subset data by selecting the layer 'B19001e1' layer and renaming to 'med_inc'
-texas_inc <- texas_census %>%
-  dplyr::select(id = GEOID,
-                med_inc = B19013e1)
-
-```
 
 Preliminary data exploration
+
+
 ```{r}
 #| code-fold: true
 #| code-summary: "Display Code"
 
 # ---- Preliminary Data Exploration ----   
 
-# Generate a map of Texas blocks colored by income
-tm_shape(texas_inc) +
-  tm_fill(col = 'med_inc', palette = 'Reds')
+# Projected BBox Bounds
+bbox_proj <- st_bbox(c(xmin = 1838039,
+                  xmax = 2006680,
+                  ymin = 7216740,
+                  ymax = 7385430))
+
+houston_buildings <- st_crop(buildings, bbox_proj) 
+houston_census <- st_crop(texas_census, bbox_proj)
+
+
 ```
 
+
+
 Calculate change in lights
+
 ```{r}
 #| code-fold: true
 #| code-summary: "Display Code"
@@ -161,18 +173,95 @@ diff_poly <- as.polygons(reclassified) %>%
 
 ```
 
-Clean Lights
-```{r}
-#| code-fold: true
-#| code-summary: "Display Code"
 
-# ---- Define Boundary Extent for Houston ----   
+# Set of maps comparing night light intensities before and after the first to storms
+
+```{r}
+# ---- Crop before and after images to Houston ----   
 
 # Define Houston Boundary Extent
 bbox <- st_bbox(c(xmin = -96.5,
                   xmax = -94.5,
                   ymin = 29,
                   ymax = 30.5))
+
+# Crop before and after images
+before_lights <- crop(before_lights, bbox) 
+after_lights <- crop(after_lights, bbox)
+
+# ---- Define Night Light Color Palette ----   
+light_palette <- colorRampPalette(c("#0D0D0D", "#6C378F", "#8C206F", "#F29A2E","#FFE802", "lightyellow"))
+
+# ---- Create Before Map ----   
+before_map <- tm_shape(before_lights) + 
+  tm_raster(palette = light_palette(10),
+            style = "cont",
+            stretch = "hist",
+            colorNA ="#011526",
+            breaks = c(0, 9000),
+            legend.is.portrait = FALSE,
+            title = "Light Intensity")+
+  tm_layout(legend.position = c(.8, 0.03),
+            legend.text.color = "#D3DFEB",
+            legend.show = TRUE,
+            legend.hist.width = 1,
+            legend.format = list(digits = 0),
+            legend.title.color = "#D3DFEB",
+            legend.title.size = 1,
+            frame = FALSE) + 
+  tm_credits("Houston, Texas", 
+             position = c(.04, 0.9),
+             size = 1.2,
+             col = "#D3DFEB",
+             fontface = "bold") + 
+   tm_credits("Before: 2021-02-07", 
+             position = c(.04, 0.85),
+             size = 1,
+             col = "#D3DFEB")
+
+# ---- Create After Map ----   
+after_map <- tm_shape(after_lights) + 
+  tm_raster(palette = light_palette(10),
+            style = "cont",
+            stretch = "hist",
+            colorNA ="#011526",
+            breaks = c(0, 9000),
+            legend.is.portrait = FALSE,
+            title = "Light Intensity")+
+  tm_layout(legend.position = c(.8, 0.03),
+            legend.text.color = "#D3DFEB",
+            legend.show = TRUE,
+            legend.hist.width = 1,
+            legend.format = list(digits = 0),
+            legend.title.color = "#D3DFEB",
+            legend.title.size = 1,
+            frame = FALSE) + 
+  tm_credits("Houston, Texas", 
+             position = c(.04, 0.9),
+             size = 1.2,
+             col = "#D3DFEB",
+             fontface = "bold") + 
+   tm_credits("After: 2021-02-16", 
+             position = c(.04, 0.85),
+             size = 1,
+             col = "#D3DFEB")
+
+# ---- Combine Before and After Maps into an Animation ----
+
+maps_combo <- list(before_map, after_map)  
+outage_animation <- tmap_animation(maps_combo, delay = 300, width = 600, height = 600) 
+
+before_map
+after_map
+```
+
+
+
+Clean Lights
+
+```{r}
+#| code-fold: true
+#| code-summary: "Display Code"
 
 # ---- Exclude highways from blackout image ----
 
@@ -195,26 +284,29 @@ tm_shape(diff_hwy_masked) +
   tm_layout(main.title = "Houston Lights Difference (Highways Masked)",
             frame = FALSE)
 
+```
 
-# Projected BBox Bounds
-bbox_proj <- st_bbox(c(xmin = 1838039,
-                  xmax = 2006680,
-                  ymin = 7216740,
-                  ymax = 7385430))
+```{r}
+# tm_shape(houston_census) +
+#   tm_polygons() +
+#   tm_shape(diff_hwy_masked) +
+#   tm_borders() +
+#   tm_layout(
+#     title = "Houston Census and Power Outage Map",
+#     legend.outside = TRUE
+#   )
 ```
 
 
 ### Identify homes likely impacted by blackouts
+
 ```{r}
 #| code-fold: true
 #| code-summary: "Display Code"
 
-# ---- Crop Buildings to Houston ----   
-houston_buildings <- st_crop(buildings, bbox_proj) 
 
 # ---- Select buildings that overlap with areas that experienced a blackout  ----   
 building_blackouts <- st_intersection(diff_hwy_masked, houston_buildings) 
-
 
 # tm_shape(building_blackouts) + 
 #   tm_polygons(col = "lightblue", border.col = "darkblue") +
@@ -224,18 +316,30 @@ building_blackouts <- st_intersection(diff_hwy_masked, houston_buildings)
 ```
 
 
-```{r}
-houston_census <- st_crop(texas_inc, bbox_proj) 
-#plot(houston_census)
-```
+# Map of the homes in in Houston that lost power
 
-### Identify census tracts impacted by blackouts
 ```{r}
 #| code-fold: true
 #| code-summary: "Display Code"
 
-# ---- Crop Census Layers to Houston ----   
+# ---- Map of the homes in in Houston that lost power  ----   
 
+tm_shape(building_blackouts) + 
+  tm_fill() +
+  tm_layout(main.title = "Homes in Houston that Lost Power",
+            frame = FALSE)
+
+# Investigate the number of homes in Houston that lost power
+print(paste("The number of homes in Houston that lost power was approximately", nrow(building_blackouts)))
+```
+
+
+### Identify census tracts impacted by blackouts
+
+
+```{r}
+#| code-fold: true
+#| code-summary: "Display Code"
 
 # ---- Identify census tracts that containing buildings that experienced a blackout  ----  
 
@@ -248,12 +352,11 @@ blackout_tract_ids <- unique(census_blackouts$id)  # Adjust column name if diffe
 # Add a new column to the original houston_inc indicating blackout status
 houston_census$blackout_status <- ifelse(houston_census$id %in% blackout_tract_ids, "Yes Blackout", "No Blackout")
 
-# tm_shape(census_blackouts) + 
-#   tm_polygons(col = "pink", border.col = "red") +
-#   tm_layout(main.title = "Census Blackouts",
-#             frame = FALSE)
+tm_shape(houston_census) + 
+  tm_polygons(col = "pink", border.col = "red") +
+  tm_layout(main.title = "Census Blackouts",
+            frame = FALSE)
 ```
-
 
 ```{r}
 # # Dissolve by blackout_status
@@ -266,6 +369,14 @@ houston_census$blackout_status <- ifelse(houston_census$id %in% blackout_tract_i
 
 ```
 
+```{r}
+tm_shape(houston_census) +
+  tm_polygons(col = "med_inc", palette = "Reds", title = "Median Income") 
+```
+
+```{r}
+table(houston_census$blackout_status)
+```
 
 ```{r}
 #| code-fold: true
@@ -285,17 +396,6 @@ ggplot(data = houston_census) +
 ```
 
 ```{r}
-ggplot(data = houston_census) +
-  geom_boxplot(aes(x = med_inc, y = blackout_status, fill = blackout_status)) +
-  labs(
-    x = "Blackout Status",
-    y = "Median Household Income",
-    title = "Income Distribution by Blackout Status"
-  ) +
-  theme_minimal()
-```
-
-```{r}
 # palette
 
 # Dark Blues - #002129, #08295E, #011526
@@ -306,3 +406,5 @@ ggplot(data = houston_census) +
 # 
 ```
 
+
+This project investigates the impact of a severe weather in 2021 which caused widespread power outages throughout the state of Texas, including Houston. I use NASA Visible Infrared Imaging Radiometer Suite (VIIRS) nighttime imagery to detect night lights to compare the intensity of night lights before and after the first major storm. I also overlayed the imagery with census tract data pertaining to the median household income. I found that the 
