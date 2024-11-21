@@ -7,18 +7,20 @@ execute:
   eval: true
   warning: false
   message: false
-  results: hide
+  results: "hide"
 format:
   html:
     toc: true 
     code-fold: true
-    code-summary: "Display Code"
 editor_options: 
   chunk_output_type: console
 ---
 
 ### Set Up Workspace
+
 ```{r}
+#| code-summary: "Load libraries"
+
 # ---- Load Libraries ----
 
 # Load libraries
@@ -36,10 +38,13 @@ library(raster)
 library(dplyr)
 library(gifski)
 library(slideview)
+library(testthat)
+
 ```
 
-### Read in Project Data:
 ```{r}
+#| code-summary: "Read in Project Data"
+
 # ---- Read in Night Light Data ----
 
 # Read in the night light raster data
@@ -77,8 +82,10 @@ texas_census <- st_sf(income_layer, geom = geom_layer)  %>%
 
 ```
 
-Inspect & Prepare Vector Data CRS
+
 ```{r}
+#| code-summary: "Inspect & Prepare Vector Data CRS"
+
 # ---- Change CRS of Vector Data ----   
               
 # Create a vector data list
@@ -90,11 +97,12 @@ for (i in vector_list) {
          st_transform(get(i), crs = 3083)
          else get(i))
 }
-       
+
 ```
 
-Process Data:
 ```{r}
+#| code-summary: "Crop vector layers to Houston"
+
 # ---- Crop Vector Layers to Houston ----   
 
 # Projected BBox Bounds
@@ -110,8 +118,9 @@ houston_census <- st_crop(texas_census, bbox_proj)
 ```
 
 
-### Calculate change in lights
+### Calculate change in night light intensity
 ```{r}
+#| code-summary: "Calculate change in night lights and create blackout mask"
 
 # ---- Calculate difference in night lights ----   
 
@@ -147,9 +156,10 @@ sf::sf_use_s2(TRUE)
 sf::sf_use_s2(FALSE)
 ```
 
-# Set of maps comparing night light intensities before and after the first to storms
-
+### Set of maps comparing night light intensities before and after the first to storms:
 ```{r}
+#| code-summary: "Crop before and after images to Houston"
+
 # ---- Crop before and after images to Houston ----   
 
 # Define Houston Boundary Extent
@@ -172,14 +182,7 @@ after_lights_only[after_lights_only < 50] <- NA
 ```
 
 ```{r}
-# ---- Prepare Background Layers for Map ----   
-
-roads_proj <- st_transform(roads, st_crs(before_lights))
-census_proj <- st_transform(houston_census, st_crs(before_lights))
-
-```
-
-```{r}
+#| code-summary: "Create a set of maps comparing night light intensity"
 
 # ---- Define Night Light Color Palette ----   
 
@@ -245,7 +248,7 @@ tm_shape(before_lights_only, bbox = bbox) +
             legend.text.size = 0.7,
             frame = FALSE,
             bg.color = "#07222B",
-            main.title = "Before the Storm                      Feb. 7, 2023",
+            main.title = "Before the Storm                            Feb. 7, 2023",
             main.title.fontface = "bold",
             main.title.color = "#D3DFEB") +
   
@@ -272,8 +275,8 @@ tm_shape(before_lights_only, bbox = bbox) +
            bg.alpha = 0.8,
            fontface = "bold",
            size = 1) +
-  tm_credits("  ____",
-           position = c(0.28, 0.61),
+  tm_credits("________",
+           position = c(0.27, 0.61),
            col = "#E0D71B",
            fontface = "bold",
            size = 1.2,
@@ -328,7 +331,7 @@ tm_shape(after_lights_only, bbox = bbox) +
             legend.text.size = 0.7,
             frame = FALSE,
             bg.color = "#07222B",
-            main.title = "After the Storm                      Feb. 16, 2023",
+            main.title = "After the Storm                             Feb. 16, 2023",
             main.title.fontface = "bold",
             main.title.color = "#D3DFEB") +
   
@@ -355,13 +358,19 @@ tm_shape(after_lights_only, bbox = bbox) +
            bg.alpha = 0.8,
            fontface = "bold",
            size = 1) +
-  tm_credits("  ____",
-           position = c(0.28, 0.61),
+  tm_credits("________",
+           position = c(0.27, 0.61),
            col = "#E0D71B",
            fontface = "bold",
            size = 1.2,
            width = 0.24,
            alpha = 0.8)
+
+```
+
+
+```{r}
+#| echo: FALSE
 
 # ---- Combine Before and After Maps into an Animation ----
 
@@ -371,17 +380,18 @@ outage_animation <- tmap_animation(maps_combo,
                                    width = 600,
                                    height = 600,
                                   filename = "outage_animation.gif") 
-
 ```
 
 Below is an animation showing changes before and after the outage:
 
 ![Data Source: NASA VIIRS](outage_animation.gif)
 
-This map shows the difference in night light intensity between a typical night before the storm (February 7, 2023), compared to night light intensity after the storm (Feb 16, 2023), when the Houston, Region experienced widespread power outages. The night light intensity ranges from no light (dark blue), to pink (mid light intensity), to yellow (highest light intensity).
+*This map shows the difference in night light intensity between a typical night before the storm (February 7, 2023), compared to night light intensity after the storm (Feb 16, 2023), when the Houston, Region experienced widespread power outages. The night light intensity ranges from no light (dark blue), to pink (mid light intensity), to yellow (highest light intensity).*
 
-### Create buffer around highways and crop diff to it
+
 ```{r}
+#| code-summary: "Create buffer around highways and exclude from night light difference layer"
+
 # Assuming that it is okay to treat all spatial data is planar
 sf::sf_use_s2(TRUE)
 sf::sf_use_s2(FALSE)
@@ -396,8 +406,9 @@ diff_poly <- st_make_valid(diff_poly)
 diff_hwy_mask <- st_difference(diff_poly, highway_buffer)
 ```
 
-### Identify homes likely impacted by blackouts
+### Identify Homes & Census Tracts That Were Likely Impacted By Blackouts
 ```{r}
+#| code-summary: "Select buildings that overlap with areas that experienced a blackout"
 
 # Make all spatial data planar
 sf::sf_use_s2(TRUE)
@@ -416,17 +427,15 @@ blackout_buildings_index <- unlist(building_blackouts) %>%
 houston_buildings$Blackout <- "No"
 houston_buildings$Blackout[blackout_buildings_index] <- "Yes"  
 
-
-```
-
-```{r}
+# Create a layer with blackout buildings only
 houston_buildings_blackout <- houston_buildings %>% filter(Blackout == "Yes")
 ```
 
-#### Map of the homes in in Houston that lost power
 
-  
+### Map of the homes in in Houston that lost power:
 ```{r}
+#| code-summary: "Create a map of the homes in in Houston that lost power"
+
 # ---- Map of the homes in in Houston that lost power  ----   
 
 # Add Layer of Homes in Houston with Power
@@ -446,9 +455,12 @@ tm_shape(roads) +
 
 # Add buildings
 tm_shape(houston_buildings_blackout, bbox = bbox_proj) + 
-  tm_fill(col = "Blackout",
-          palette = c("Yes" = "#00BFB2"),
-          title = "Experienced Outage") +
+  tm_polygons(col = "#00BFB2",
+              border.col= "#00BFB2",
+              title = "Experienced Outage",
+              alpha = 0.5,
+              lwd = 0.2,
+              border.alpha = 0.5) +
   
 # Formatting
 tm_layout(frame = FALSE,
@@ -462,15 +474,17 @@ tm_layout(frame = FALSE,
   
   # Add title
 tm_credits("Over 157 Thousand Homes Were Left Without Power\nDuring the February 2021 Storm",
-             position = c(0.02, 0.9),
+             position = c(0.02, 0.89),
              size = 0.8,
-             col = "white") +
+             col = "white",
+            fontface = "italic") +
  
   # Edit scale bar
   tm_scale_bar(color.dark = "#9BB4CC",
                color.light = "#435058",
                text.color = "grey",
                breaks = c(0,10)) +
+  
   # Edit compass
   tm_compass(type = "arrow",
              size = 1,
@@ -488,22 +502,22 @@ tm_credits("Over 157 Thousand Homes Were Left Without Power\nDuring the February
            bg.alpha = 0.8,
            fontface = "bold",
            size = 1) +
-  tm_credits("  ____",
-           position = c(0.28, 0.61),
+  tm_credits("____",
+           position = c(0.32, 0.61),
            col = "#E0D71B",
            fontface = "bold",
            size = 1.2,
            width = 0.24,
            alpha = 0.8)
 
-# Investigate the number of homes in Houston that lost power
-print(paste("The number of homes in Houston that lost power was approximately", nrow(building_blackouts)))
-
 buildings_map
 ```
-
+*This map shows the homes in Houston that were likely impacted by the power outages, highlighted in turquoise blue. These buildings were identified by selecting buildings that overlap with areas where nightlight intensity had a drop of more than 200 nW cm<sup>-2</sup> sr<sup>-1</sup>.*
 
 ```{r}
+#| code-summary: "Identify census tracts that contain buildings that experienced a blackout"
+
+
 # ---- Identify census tracts that contain buildings that experienced a blackout  ----  
 
 # Get intersection of buildings layer and areas that experienced a blackout - with highways masked
@@ -519,8 +533,10 @@ houston_census$Blackout[blackout_census_index] <- "Yes"  # Set "Yes" for tracts 
 
 ```
 
-
+### Map of the census tracts in Houston that lost power:
 ```{r}
+#| code-summary: "Create a map of the census tracts in Houston that lost power"
+
 # ---- Map of census tracts impacted by power outages  ----   
 
 census_map <- tm_shape(houston_census) + 
@@ -531,42 +547,68 @@ census_map <- tm_shape(houston_census) +
           lwd = 0.2) +
   tm_layout(frame = FALSE,
             legend.text.color="grey",
-            legend.position = c(0.05, 1),
+            legend.position = c(0.89, 0.025),
             legend.title.color='grey',
+            legend.title.size = 0.7,
+            legend.text.size = 0.5,
             bg.color = "#07222B",
             main.title = "Census Blocks in Houston That Were Impacted\nBy Power Outages",
-          main.title.fontface = "bold",
-          main.title.color = "#D3DFEB") +
+            main.title.size = 1,
+            main.title.fontface = "bold",
+            main.title.color = "#D3DFEB") +
   
    # Edit scale bar
-  tm_scale_bar(color.dark = "#9BB4CC",
+  tm_scale_bar(color.dark = "#07222B",
                color.light = "#435058",
-               text.color = "grey",
-               breaks = c(0,10)) +
+               text.color = "#07222B",
+               breaks = c(0,10),
+               position = 0.05, 0.05) +
   # Edit compass
   tm_compass(type = "arrow",
              size = 1,
-             position = c(0.89, 0.09),
-             color.dark = "#9BB4CC",
-             color.light = "grey",
-             text.color = "grey",
-             text.size = .6)
+             position = c(0.05, 0.09),
+             color.dark = "#07222B",
+             color.light = "#07222B",
+             text.color = "#07222B",
+             text.size = .6) + 
+  
+# Add label for Houston, TX
+  tm_credits("Houston, TX ",
+           position = c(0.09, 0.6),
+           col = "#07222B",
+           bg.color = "#E0D71B",
+           bg.alpha = 0.8,
+           fontface = "bold",
+           size = 1) +
+  tm_credits("____",
+           position = c(0.32, 0.61),
+           col = "#E0D71B",
+           fontface = "bold",
+           size = 1.2,
+           width = 0.24,
+           alpha = 0.8)
+
 #table(houston_census$Blackout)
 
 census_map
 ```
+*This map shows the census tracts in Houston that were likely impacted by the power outages. Census tracts that contain homes that experienced a power outage are shown in turquoise blue and tracts where there were no power outages detected are shown in yellow.*
 
+### Plot comparing the distributions of median household income for census tracts that did and did not experience blackouts
 ```{r}
-# ---- Plot Difference ----   
+#| code-summary: "Plot the income vs power outage status"
 
+# ---- Plot distribution of median household income for census tracts that did and did not experience power outages ----   
 
 ggplot(data = houston_census) +
   geom_violin(aes(x = med_inc, y = Blackout),
-              fill = "#00BFB2") +
+              fill = "#00BFB2",
+              alpha = 0.8,
+              draw_quantiles = c(0.5)) +
   labs(
     x = "Median Household Income",
     y = "Blackout Status",
-    title = "Income Distribution by Blackout Status") +
+    title = "Median Household Income Distribution by Blackout Status") +
   theme_minimal(base_size = 14) +
   theme(
     legend.position = "none",
@@ -578,10 +620,14 @@ ggplot(data = houston_census) +
     axis.title = element_text(color = "white"),
     plot.title = element_text(color = "white",
                               size = 16,
-                              face = "bold")
+                              face = "bold") 
   )
 ```
+*This plot shows the distribution of median household income by blackout status with median household income shown in U.S. dollars on the x axis and whether or not they experienced a blackout indicated on the y-axis. This figure shows that there are similar distributions between areas that did and did not experience a blackout, demonstrating that there is not a strong relationship between the two.*
 
-This project investigates the impact of a severe weather event in 2021 which caused widespread power outages throughout the state of Texas, including Houston. I use NASA Visible Infrared Imaging Radiometer Suite (VIIRS) nighttime imagery to detect night lights to compare the intensity of night lights before and after the first major storm. I also overlayed the imagery with census tract data pertaining to the median household income. I found that the median household income for census tracts that experienced a blackout was slightly higher then the median for tracts that didn't experience an outage. For this project, I did not normalize for area, so it is possible that the difference in sample size of each group could skew the observed median values.
+
+
+`DESCRIPTION:`
+*This project investigates the impact of a severe weather event in 2021 which caused widespread power outages throughout the state of Texas, including Houston. I use NASA Visible Infrared Imaging Radiometer Suite (VIIRS) nighttime imagery to detect night lights to compare the intensity of night lights before and after the first major storm. I also overlaid the imagery with census tract data containing information on the median household income. I found that the median household income for census tracts that experienced a blackout was slightly higher then the median for tracts that didn't experience an outage. For this project, I did not normalize for area, so it is possible that the difference in sample size of each group could skew the observed median values. Additionally, it is possible that there could be omitted variables that impact the relationship between whether or not an area experienced an outage and the median household income.*
 
 
