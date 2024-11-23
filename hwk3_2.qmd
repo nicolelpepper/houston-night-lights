@@ -39,6 +39,8 @@ library(dplyr)
 library(gifski)
 library(slideview)
 library(testthat)
+library(scales)
+
 
 ```
 
@@ -370,23 +372,26 @@ tm_shape(after_lights_only, bbox = bbox) +
 
 
 ```{r}
-#| echo: FALSE
+#| code-summary: "Create before and after map animation"
 
+# This section is commented out since the map has been saved as a file, leaving it here for reference on how the animation was made 
+
+# Create Animation
 # ---- Combine Before and After Maps into an Animation ----
 
-maps_combo <- list(before_map, after_map)  
-outage_animation <- tmap_animation(maps_combo,
-                                   delay = 300,
-                                   width = 600,
-                                   height = 600,
-                                  filename = "outage_animation.gif") 
+# maps_combo <- list(before_map, after_map)  
+# outage_animation <- tmap_animation(maps_combo,
+#                                    delay = 300,
+#                                    width = 600,
+#                                    height = 600,
+#                                   filename = "outage_animation.gif") 
 ```
 
 Below is an animation showing changes before and after the outage:
 
 ![Data Source: NASA VIIRS](outage_animation.gif)
 
-*This map shows the difference in night light intensity between a typical night before the storm (February 7, 2023), compared to night light intensity after the storm (Feb 16, 2023), when the Houston, Region experienced widespread power outages. The night light intensity ranges from no light (dark blue), to pink (mid light intensity), to yellow (highest light intensity).*
+*This map shows the difference in night light intensity between a typical night before the storm (February 7, 2023), compared to night light intensity after the storm (Feb 16, 2023), when the Houston region in Texas experienced widespread power outages. The night light intensity ranges from no light (dark blue), to pink (mid light intensity), to yellow (highest light intensity).*
 
 
 ```{r}
@@ -512,7 +517,7 @@ tm_credits("Over 157 Thousand Homes Were Left Without Power\nDuring the February
 
 buildings_map
 ```
-*This map shows the homes in Houston that were likely impacted by the power outages, highlighted in turquoise blue. These buildings were identified by selecting buildings that overlap with areas where nightlight intensity had a drop of more than 200 nW cm<sup>-2</sup> sr<sup>-1</sup>.*
+*This map shows the homes in Houston, Texas that were likely impacted by the power outages, highlighted in turquoise blue. These buildings were identified by selecting buildings that overlap with areas where nightlight intensity had a drop of more than 200 nW cm<sup>-2</sup> sr<sup>-1</sup>. There were over 157,000 homes that were identified to likely have been impacted by power outages in the greater Houston Area.*
 
 ```{r}
 #| code-summary: "Identify census tracts that contain buildings that experienced a blackout"
@@ -606,9 +611,10 @@ ggplot(data = houston_census) +
               alpha = 0.8,
               draw_quantiles = c(0.5)) +
   labs(
-    x = "Median Household Income",
+    x = "Median Annual Household Income (2019)",
     y = "Blackout Status",
     title = "Median Household Income Distribution by Blackout Status") +
+  scale_x_continuous(labels = label_dollar()) +
   theme_minimal(base_size = 14) +
   theme(
     legend.position = "none",
@@ -623,11 +629,24 @@ ggplot(data = houston_census) +
                               face = "bold") 
   )
 ```
-*This plot shows the distribution of median household income by blackout status with median household income shown in U.S. dollars on the x axis and whether or not they experienced a blackout indicated on the y-axis. This figure shows that there are similar distributions between areas that did and did not experience a blackout, demonstrating that there is not a strong relationship between the two.*
+*This plot shows the distribution of median household income (based on 2019) by blackout status with median household income shown in U.S. dollars on the x axis and whether or not they experienced a blackout indicated on the y-axis. This figure shows that there are similar distributions between areas that did and did not experience a blackout, demonstrating that there is not a strong relationship between the two.*
 
 
 
 `DESCRIPTION:`
 *This project investigates the impact of a severe weather event in 2021 which caused widespread power outages throughout the state of Texas, including Houston. I use NASA Visible Infrared Imaging Radiometer Suite (VIIRS) nighttime imagery to detect night lights to compare the intensity of night lights before and after the first major storm. I also overlaid the imagery with census tract data containing information on the median household income. I found that the median household income for census tracts that experienced a blackout was slightly higher then the median for tracts that didn't experience an outage. For this project, I did not normalize for area, so it is possible that the difference in sample size of each group could skew the observed median values. Additionally, it is possible that there could be omitted variables that impact the relationship between whether or not an area experienced an outage and the median household income.*
 
+### Resources:
+
+#### Night Light Imagery Data:
+NASA (2021) VIIRS Level-1 and Atmospheric Archive & Distribution Active Archive Center. Night Light Imagery for February 7, 2021, and February 16, 2021. Available from: https://ladsweb.modaps.eosdis.nasa.gov/ Access date: 11/15/24
+
+#### Roads Data: 
+Open Street Map (OSM) (Year Unknown) OSM Roads Free. Available from: https://planet.openstreetmap.org/ Access date: 11/15/24
+
+#### Houses Data: 
+Open Street Map (OSM) (Year Unknown) OSM Buildings A Free. Available from: https://planet.openstreetmap.org/ Access date: 11/15/24
+
+#### Socioeconomic Data: 
+US Census Bureau's American Community Survey (2019) ACS 2019 5YR Tract 48. Available from: https://www.census.gov/programs-surveys/acs Access date: 11/15/24
 
