@@ -639,15 +639,10 @@ ggplot(data = houston_census) +
 
 ### Resources:
 
-#### Night Light Imagery Data:
-NASA (2021) VIIRS Level-1 and Atmospheric Archive & Distribution Active Archive Center. Night Light Imagery for February 7, 2021, and February 16, 2021. Available from: https://ladsweb.modaps.eosdis.nasa.gov/ Access date: 11/15/24
+- [NASA](https://planet.openstreetmap.org/) VIIRS Level-1 and Atmospheric Archive & Distribution Active Archive Center. Night Light Imagery for February 7, 2021, and February 16, 2021. [Data] *Access date: 11/15/24*
 
-#### Roads Data: 
-Open Street Map (OSM) (Year Unknown) OSM Roads Free. Available from: https://planet.openstreetmap.org/ Access date: 11/15/24
+- [Open Street Map (OSM)](https://planet.openstreetmap.org/) OSM Roads Free, Year Unknown [Data] *Access date: 11/15/24*
 
-#### Houses Data: 
-Open Street Map (OSM) (Year Unknown) OSM Buildings A Free. Available from: https://planet.openstreetmap.org/ Access date: 11/15/24
+- [Open Street Map (OSM)](https://planet.openstreetmap.org/) OSM Buildings A Free, Year Unkown [Data] *Access date: 11/15/24*
 
-#### Socioeconomic Data: 
-US Census Bureau's American Community Survey (2019) ACS 2019 5YR Tract 48. Available from: https://www.census.gov/programs-surveys/acs Access date: 11/15/24
-
+- [US Census Bureau's American Community Survey](https://www.census.gov/programs-surveys/acs) ACS 2019 5YR Tract 48, 2019 [Data] *Access date: 11/15/24*
