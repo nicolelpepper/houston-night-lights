@@ -16,6 +16,16 @@ editor_options:
   chunk_output_type: console
 ---
 
+### Data Descriptions:
+
+- The `Night Light Imagery` data is a collection of raster files containing the nighttime light intensity for the Houston area. It is from NASA  Visible Infrared Imaging Radiometer Suite (VIIRS). VIIRS data is distributed through [NASA’s Level-1 and Atmospheric Archive & Distribution System Distributed Active Archive Center (LAADS DAAC)](https://ladsweb.modaps.eosdis.nasa.gov/). There are 4 tiles stored as `.tifs`, two tiles to cover the Houston area before and after the storm. The data was accessed locally.
+
+- The `Roads` dataset contains roadways for the Houston Metro Area. The data is a subset of roads from OpenStreetMap (OSM) that intersect with Houston, prepared by Geofabrik [Geofabrik](https://download.geofabrik.de/). It was stored by a geopackage, the data was accessed locally.
+
+- The `Buildings` dataset contains polygons for buildings in the Houston Metro Area. The data is a subset of buildings from OpenStreetMap (OSM) that fall within the Houston Metro Area, prepared by [Geofabrik](https://download.geofabrik.de/). It was stored by a geopackage, the data was accessed locally.
+
+- The `Socioeconomics` data contains socioeconomic information for every home, by census tract, in the Houston Metro Area. The data is a subset of census data from the [U.S. Census Bureau’s American Community Survey](https://www.census.gov/programs-surveys/acs) for census tracts in 2019. It was stored as an Esry file geodatabase.
+
 ### Set Up Workspace
 
 ```{r}
