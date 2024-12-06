@@ -370,7 +370,6 @@ tm_shape(after_lights_only, bbox = bbox) +
 
 ```
 
-
 ```{r}
 #| code-summary: "Create before and after map animation"
 
@@ -438,6 +437,7 @@ houston_buildings_blackout <- houston_buildings %>% filter(Blackout == "Yes")
 
 
 ### Map of the homes in in Houston that lost power:
+
 ```{r}
 #| code-summary: "Create a map of the homes in in Houston that lost power"
 
@@ -518,6 +518,7 @@ tm_credits("Over 157 Thousand Homes Were Left Without Power\nDuring the February
 buildings_map
 ```
 *This map shows the homes in Houston, Texas that were likely impacted by the power outages, highlighted in turquoise blue. These buildings were identified by selecting buildings that overlap with areas where nightlight intensity had a drop of more than 200 nW cm<sup>-2</sup> sr<sup>-1</sup>. There were over 157,000 homes that were identified to likely have been impacted by power outages in the greater Houston Area.*
+
 
 ```{r}
 #| code-summary: "Identify census tracts that contain buildings that experienced a blackout"
