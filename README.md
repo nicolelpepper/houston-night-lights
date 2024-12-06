@@ -22,45 +22,44 @@
 
 ### Data Descriptions:
 
-- The `Average Annual Sea Surface Temperature` (SST) data is a collection of raster files containing the average annual SST for 2008 - 2012 along the U.S. West Coast. It is from NOAA’s 5km Daily Global Satellite Sea Surface Temperature Anomaly. The SST data is stored in `/data/` folder in the repo as `average_annual_sst_YEAR.tif`, I did not push the original full dataset to GitHub, it was accessed locally.
-  
-- The `Depth` dataset is from General Bathymetric Chart of the Oceans (GEBCO). The SST data is stored in `/data/` folder in the repo as `depth.tif`, I did not push the original full dataset to GitHub, it was accessed locally.
+- The `Night Light Imagery` data is a collection of raster files containing the nighttime light intensity for the Houston area. It is from NASA  Visible Infrared Imaging Radiometer Suite (VIIRS). VIIRS data is distributed through [NASA’s Level-1 and Atmospheric Archive & Distribution System Distributed Active Archive Center (LAADS DAAC)](https://ladsweb.modaps.eosdis.nasa.gov/). There are 4 tiles stored as `.tifs`, two tiles to cover the Houston area before and after the storm. The data was accessed locally.
 
-- The `Exclusive Economic Zone (EEZ) Boundary` data is from Marine Regions.  The EEZ data is stored in `/data/` folder in the repo as `wc_regions_clean.shp`, I did not push the original full dataset to GitHub, it was accessed locally.
+- The `Roads` dataset contains roadways for the Houston Metro Area. The data is a subset of roads from OpenStreetMap (OSM) that intersect with Houston, prepared by Geofabrik [Geofabrik](https://download.geofabrik.de/). It was stored by a geopackage, the data was accessed locally.
 
-- The `State Boundary` dataset is from TIGER/Line Shapefiles. R package `TIGRIS` version 1.5.0. https://CRAN.R-project.org/package=tigris.
-  
+- The `Buildings` dataset contains polygons for buildings in the Houston Metro Area. The data is a subset of buildings from OpenStreetMap (OSM) that fall within the Houston Metro Area, prepared by [Geofabrik](https://download.geofabrik.de/). It was stored by a geopackage, the data was accessed locally.
+
+- The `Socioeconomics` data contains socioeconomic information for every home, by census tract, in the Houston Metro Area. The data is a subset of census data from the [U.S. Census Bureau’s American Community Survey](https://www.census.gov/programs-surveys/acs) for census tracts in 2019. It was stored as an Esry file geodatabase.
+
 ### Repo structure:
+*Note that the data was not pushed to GitHub*
 
 ```
-EDS223-HW3
+houston-night-lights
 │   README.md
-│   qmd/Rmd/Proj files
-|   .gitignore
+│   Rmd/Proj files    
 │
 └───data
-    │   wc_regions_clean.shp
-    │   depth.tif
-    │   average_annual_sst_2008.tif
-    │   average_annual_sst_2009.tif
-    │   average_annual_sst_2010.tif
-    │   average_annual_sst_2011.tif
-    │   average_annual_sst_2012.tif
+    │   gis_osm_buildings_a_free_1.gpkg
+    │   gis_osm_roads_free_1.gpkg
+    │
+    └───ACS_2019_5YR_TRACT_48_TEXAS.gdb
+    |   │   census tract gdb files
+    |
+    └───VNP46A1
+    |   │   VIIRS data files
+
 ```
 
 ### References:
 
-- [sealifebase.ca](https://www.sealifebase.ca/search.php) [Data] *Access date: 11/20/24*
+- [NASA](https://planet.openstreetmap.org/) VIIRS Level-1 and Atmospheric Archive & Distribution Active Archive Center. Night Light Imagery for February 7, 2021, and February 16, 2021. [Data] *Access date: 11/15/24*
 
-- [Marine Regions](https://www.marineregions.org/eez.php) [Data] *Access date: 11/20/24*
+- [Open Street Map (OSM)](https://planet.openstreetmap.org/) OSM Roads Free, Year Unknown [Data] *Access date: 11/15/24*
 
-- [NOAA’s 5km Daily Global Satellite Sea Surface Temperature Anomaly v3.1](https://coralreefwatch.noaa.gov/product/5km/index_5km_ssta.php) [Data] *Access date: 11/20/24*
+- [Open Street Map (OSM)](https://planet.openstreetmap.org/) OSM Buildings A Free, Year Unkown [Data] *Access date: 11/15/24*
 
-- [General Bathymetric Chart of the Oceans (GEBCO)](https://www.gebco.net/data_and_products/gridded_bathymetry_data/#area) [Data] *Access date: 11/20/24*
 
-- [TIGER/Line Shapefiles version 1.5.0](https://CRAN.R-project.org/package=tigris) [Data] *Access date: 11/20/24*
-
+- [US Census Bureau's American Community Survey](https://www.census.gov/programs-surveys/acs) ACS 2019 5YR Tract 48, 2019 [Data] *Access date: 11/15/24*
 
 ### Acknowledgments:
-
 This assignment was created by Ruth Oliver, EDS 223 - Fall 2024 Instructor.
