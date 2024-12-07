@@ -9,7 +9,7 @@
 **Author:** Nicole Pepper
 
 <div style="text-align: left;">
-  <img src="houston-lights-map.png" alt="Image" width="900">
+  <img src="images/houston-lights.jpg" alt="Image" width="900">
 
 ### About the Repo:
 
