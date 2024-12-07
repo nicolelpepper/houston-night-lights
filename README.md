@@ -1,7 +1,8 @@
 *UCSB MEDS* - *EDS 223 - Geospatial Analysis &amp; Remote Sensing*
 
 
-# Houston Night Lights
+# Lights Out In Houston
+### Mapping Power Outages & Socioeconomic Impacts from the February 2021 Extreme Winter Storm on Houston
 
 ![R Programming](https://img.shields.io/badge/R_Programming-cornflowerblue?style=for-the-badge&logo=R) ![Remote Sensing](https://img.shields.io/badge/Remote_Sensing-green?style=for-the-badge) ![GIS](https://img.shields.io/badge/GIS-purple?style=for-the-badge)  ![UCSB MEDS](https://img.shields.io/badge/UCSB%20MEDS-blue?style=for-the-badge) 
 
