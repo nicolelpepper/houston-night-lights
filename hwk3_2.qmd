@@ -1,13 +1,12 @@
 ---
-title: "Homework Assignment #3"
-subtitle: "Houston Power Outage"
+title: "Lights Out In Houston"
+subtitle: "UCSB MEDS - EDS 223 - Geospatial Analysis"
 author: "Nicole Pepper"
 date: last-modified
 execute: 
   eval: true
   warning: false
   message: false
-  results: "hide"
 format:
   html:
     toc: true 
@@ -15,6 +14,16 @@ format:
 editor_options: 
   chunk_output_type: console
 ---
+![ ](houston-lights-map.png){width=900}
+
+### About this Document:
+This Quarto Doc contains my geospatial analysis that explores the impact of a severe winter weather event on Houston, Texas, in February 2021, which caused a widespread power outage crisis throughout the region. I use NASA Visible Infrared Imaging Radiometer Suite (VIIRS) nighttime imagery to compare the intensity of night lights before and after the first major storm. I also overlaid the imagery with census tract data containing information on the median household income to explore the distribution of household income for areas that experienced a power outage.
+
+### Technical Highlights:
+- Programming in R
+- Vector data wrangling with `sf`
+- Raster data wrangling with `terra` and `stars`
+- Data visualization with `tmap` and `ggplot`
 
 ### Data Descriptions:
 
@@ -24,16 +33,13 @@ editor_options:
 
 - The `Buildings` dataset contains polygons for buildings in the Houston Metro Area. The data is a subset of buildings from OpenStreetMap (OSM) that fall within the Houston Metro Area, prepared by [Geofabrik](https://download.geofabrik.de/). It was stored by a geopackage, the data was accessed locally.
 
-- The `Socioeconomics` data contains socioeconomic information for every home, by census tract, in the Houston Metro Area. The data is a subset of census data from the [U.S. Census Bureau’s American Community Survey](https://www.census.gov/programs-surveys/acs) for census tracts in 2019. It was stored as an Esry file geodatabase.
+- The `Socioeconomics` data contains socioeconomic information for every home, by census tract, in the Houston Metro Area. The data is a subset of census data from the [U.S. Census Bureau’s American Community Survey](https://www.census.gov/programs-surveys/acs) for census tracts in 2019. It was stored as an Esri file geodatabase.
 
 ### Set Up Workspace
-
 ```{r}
 #| code-summary: "Load libraries"
 
 # ---- Load Libraries ----
-
-# Load libraries
 library(terra)
 library(geodata)
 library(tidyverse)
@@ -50,12 +56,10 @@ library(gifski)
 library(slideview)
 library(testthat)
 library(scales)
-
-
 ```
 
 ```{r}
-#| code-summary: "Read in Project Data"
+#| code-summary: "Read in project data"
 
 # ---- Read in Night Light Data ----
 
@@ -64,10 +68,6 @@ before_a <- rast("data/VNP46A1/VNP46A1.A2021038.h08v05.001.2021039064328.tif")
 before_b <- rast("data/VNP46A1/VNP46A1.A2021038.h08v06.001.2021039064329.tif")  
 after_a <- rast("data/VNP46A1/VNP46A1.A2021047.h08v05.001.2021048091106.tif")
 after_b <- rast("data/VNP46A1/VNP46A1.A2021047.h08v06.001.2021048091105.tif") 
-
-# Merge the two images per time period (before & after)
-before_lights <- merge(before_a,before_b) 
-after_lights <- merge(after_a,after_b) 
 
 # ---- Read in Buildings and Roads Data ----
 
@@ -94,9 +94,21 @@ texas_census <- st_sf(income_layer, geom = geom_layer)  %>%
 
 ```
 
+Part 1. Mapping Power Outages from the February 2021 Winter Storm
+
+### 1a. Prepare Data
+```{r}
+#| code-summary: "Prepare raster data"
+#| output: false
+
+# Merge the two images per time period (before & after)
+before_lights <- merge(before_a,before_b) 
+after_lights <- merge(after_a,after_b) 
+```
 
 ```{r}
-#| code-summary: "Inspect & Prepare Vector Data CRS"
+#| code-summary: "Prepare vector data CRS"
+#| output: false
 
 # ---- Change CRS of Vector Data ----   
               
@@ -117,22 +129,22 @@ for (i in vector_list) {
 
 # ---- Crop Vector Layers to Houston ----   
 
-# Projected BBox Bounds
+# Define BBox Bounds for EPSG: 3083
 bbox_proj <- st_bbox(c(xmin = 1838039,
                   xmax = 2006680,
                   ymin = 7216740,
                   ymax = 7385430), crs = 3083)
 
-# Crop to Houston
+# Crop buildings and census data to Houston
 houston_buildings <- st_crop(buildings, bbox_proj) 
 houston_census <- st_crop(texas_census, bbox_proj)
 
 ```
 
 
-### Calculate change in night light intensity
+### 1b. Calculate Change in Night Light Intensity
 ```{r}
-#| code-summary: "Calculate change in night lights and create blackout mask"
+#| code-summary: "Calculate change in night lights and create a blackout mask"
 
 # ---- Calculate difference in night lights ----   
 
@@ -161,6 +173,7 @@ diff_poly <- as.polygons(reclassified) %>%
   st_as_sf() %>%
   st_make_valid()
 
+# Trasform CRS to match vector data
 diff_poly <- st_transform(diff_poly, crs = 3083)
 
 # Assuming that it is okay to treat all spatial data is planar
@@ -168,9 +181,8 @@ sf::sf_use_s2(TRUE)
 sf::sf_use_s2(FALSE)
 ```
 
-### Set of maps comparing night light intensities before and after the first to storms:
 ```{r}
-#| code-summary: "Crop before and after images to Houston"
+#| code-summary: "Crop before and after night light images to Houston"
 
 # ---- Crop before and after images to Houston ----   
 
@@ -185,16 +197,20 @@ bbox <- st_bbox(c(xmin = -96.5,
 before_lights <- crop(before_lights, bbox)
 after_lights <- crop(after_lights, bbox)
 
-# Crop to exclude no lights
-before_lights_only <- before_lights
-before_lights_only[before_lights_only < 50] <- NA
+# ---- Crop night light rasters to exclude regions with no/very low lights for map (threshold of 50 nW cm^-2sr^-1) ----
 
+# Set areas less than 50 to NA for before lights
+before_lights_only <- before_lights
+before_lights_only[before_lights_only < 50] <- NA 
+
+# Set areas less than 50 to NA for after lights
 after_lights_only <- after_lights
 after_lights_only[after_lights_only < 50] <- NA
 ```
 
+### 1c. Create a Set of Maps Comparing the Before & After Night Light Images
 ```{r}
-#| code-summary: "Create a set of maps comparing night light intensity"
+#| code-summary: "Create a set of maps comparing night light intensities"
 
 # ---- Define Night Light Color Palette ----   
 
@@ -226,7 +242,7 @@ tm_shape(roads_proj) +
   tm_lines(col = "#020608",
            lwd = 2) +
   
-# Add night lights layer transparent overlay to mute roads
+# Add night lights layer transparent overlay to mute roads & census borders
 tm_shape(before_lights) + 
   tm_raster(palette = light_palette(10),
             style = "cont",
@@ -309,7 +325,7 @@ tm_shape(roads_proj) +
   tm_lines(col = "#020608",
            lwd = 2) +
   
-# Add night lights layer transparent overlay to mute roads
+# Add night lights layer transparent overlay to mute roads & census borders
 tm_shape(after_lights) + 
   tm_raster(palette = light_palette(10),
             style = "cont",
@@ -381,7 +397,7 @@ tm_shape(after_lights_only, bbox = bbox) +
 ```
 
 ```{r}
-#| code-summary: "Create before and after map animation"
+#| code-summary: "Create an animation for the before and after maps"
 
 # This section is commented out since the map has been saved as a file, leaving it here for reference on how the animation was made 
 
@@ -399,10 +415,9 @@ tm_shape(after_lights_only, bbox = bbox) +
 Below is an animation showing changes before and after the outage:
 
 ![Data Source: NASA VIIRS](outage_animation.gif)
+*This animation shows a map of Houston's night light intensity on a typical night before the storm (February 7, 2023), compared to night light intensity after the storm (Feb 16, 2023), when the Houston region in Texas experienced widespread power outages. The night light intensity ranges from no light (dark blue), to pink (mid light intensity), to yellow (highest light intensity).*
 
-*This map shows the difference in night light intensity between a typical night before the storm (February 7, 2023), compared to night light intensity after the storm (Feb 16, 2023), when the Houston region in Texas experienced widespread power outages. The night light intensity ranges from no light (dark blue), to pink (mid light intensity), to yellow (highest light intensity).*
-
-
+### 1d. Crop Highways and Roads from the Night Light Images
 ```{r}
 #| code-summary: "Create buffer around highways and exclude from night light difference layer"
 
@@ -420,9 +435,12 @@ diff_poly <- st_make_valid(diff_poly)
 diff_hwy_mask <- st_difference(diff_poly, highway_buffer)
 ```
 
-### Identify Homes & Census Tracts That Were Likely Impacted By Blackouts
+# Part 2:  Identifying Homes and Census Tracts Affected by Blackouts
+
+### 2a. Identify Homes & Census Tracts That Were Likely Impacted By Blackouts
+
 ```{r}
-#| code-summary: "Select buildings that overlap with areas that experienced a blackout"
+#| code-summary: "Select buildingstThat overlap with areas that experienced a blackout"
 
 # Make all spatial data planar
 sf::sf_use_s2(TRUE)
@@ -446,8 +464,7 @@ houston_buildings_blackout <- houston_buildings %>% filter(Blackout == "Yes")
 ```
 
 
-### Map of the homes in in Houston that lost power:
-
+### 2b. Create a Map of Homes in Houston That Experienced a Power Outage
 ```{r}
 #| code-summary: "Create a map of the homes in in Houston that lost power"
 
@@ -529,7 +546,7 @@ buildings_map
 ```
 *This map shows the homes in Houston, Texas that were likely impacted by the power outages, highlighted in turquoise blue. These buildings were identified by selecting buildings that overlap with areas where nightlight intensity had a drop of more than 200 nW cm<sup>-2</sup> sr<sup>-1</sup>. There were over 157,000 homes that were identified to likely have been impacted by power outages in the greater Houston Area.*
 
-
+### 2c. Select Census Tracts That Contain Homes That Experienced a Power Outage
 ```{r}
 #| code-summary: "Identify census tracts that contain buildings that experienced a blackout"
 
@@ -549,7 +566,7 @@ houston_census$Blackout[blackout_census_index] <- "Yes"  # Set "Yes" for tracts 
 
 ```
 
-### Map of the census tracts in Houston that lost power:
+### 2d. Create a Map of Census Tracts in Houston That Lost Power
 ```{r}
 #| code-summary: "Create a map of the census tracts in Houston that lost power"
 
@@ -610,9 +627,9 @@ census_map
 ```
 *This map shows the census tracts in Houston that were likely impacted by the power outages. Census tracts that contain homes that experienced a power outage are shown in turquoise blue and tracts where there were no power outages detected are shown in yellow.*
 
-### Plot comparing the distributions of median household income for census tracts that did and did not experience blackouts
+### 2d. Create A Plot Comparing the Distributions of Median Household Income for Census Tracts that Did and Did Not Experience Power Outages
 ```{r}
-#| code-summary: "Plot the income vs power outage status"
+#| code-summary: "Plot income vs power outage status"
 
 # ---- Plot distribution of median household income for census tracts that did and did not experience power outages ----   
 
@@ -642,10 +659,7 @@ ggplot(data = houston_census) +
 ```
 *This plot shows the distribution of median household income (based on 2019) by blackout status with median household income shown in U.S. dollars on the x axis and whether or not they experienced a blackout indicated on the y-axis. This figure shows that there are similar distributions between areas that did and did not experience a blackout, demonstrating that there is not a strong relationship between the two.*
 
-
-
-`DESCRIPTION:`
-*This project investigates the impact of a severe weather event in 2021 which caused widespread power outages throughout the state of Texas, including Houston. I use NASA Visible Infrared Imaging Radiometer Suite (VIIRS) nighttime imagery to detect night lights to compare the intensity of night lights before and after the first major storm. I also overlaid the imagery with census tract data containing information on the median household income. I found that the median household income for census tracts that experienced a blackout was slightly higher then the median for tracts that didn't experience an outage. For this project, I did not normalize for area, so it is possible that the difference in sample size of each group could skew the observed median values. Additionally, it is possible that there could be omitted variables that impact the relationship between whether or not an area experienced an outage and the median household income.*
+*I found that the median household income for census tracts that experienced a blackout was slightly higher then the median for tracts that didn't experience an outage. For this project, I did not normalize for area, so it is possible that the difference in sample size of each group could skew the observed median values. Additionally, it is possible that there could be omitted variables that impact the relationship between whether or not an area experienced an outage and the median household income.*
 
 ### Resources:
 
