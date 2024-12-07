@@ -13,7 +13,7 @@
 
 ### About the Repo:
 
-[This repository][https://github.com/nicolelpepper/aquaculture-habitat-suitability](https://github.com/nicolelpepper/houston-night-lights) contains a R-Studio Quarto Markdown document of my analysis exploring the impact of a severe weather event in 2021 on Houston, Texas, which caused widespread power outages throughout the region. I use NASA Visible Infrared Imaging Radiometer Suite (VIIRS) nighttime imagery to detect night lights to compare the intensity of night lights before and after the first major storm. I also overlaid the imagery with census tract data containing information on the median household income to explore the distribution of household income for areas that experienced a power outage.
+[This repository](https://github.com/nicolelpepper/houston-night-lights) contains a R-Studio Quarto Markdown document of my analysis exploring the impact of a severe weather event in 2021 on Houston, Texas, which caused widespread power outages throughout the region. I use NASA Visible Infrared Imaging Radiometer Suite (VIIRS) nighttime imagery to detect night lights to compare the intensity of night lights before and after the first major storm. I also overlaid the imagery with census tract data containing information on the median household income to explore the distribution of household income for areas that experienced a power outage.
 
 ### Technical Highlights:
 - Programming in R
